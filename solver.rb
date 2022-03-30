@@ -1,12 +1,14 @@
-def find_sum_options(sum, n)
+require 'set'
+
+def find_sum_options(sum, n, allowed_numbers=(1..9))
   options =[]
   option = []
-  if n==1 && (1..9).include?(sum)
+  if n==1 && allowed_numbers.include?(sum)
     options << [sum]
   else
-    (1..9).each do |number|
+    allowed_numbers.each do |number|
       if number < sum
-        find_sum_options(sum-number, n-1).each do |smaller_option|
+        find_sum_options(sum-number, n-1, (number+1..9)).each do |smaller_option|
           option = [number] + smaller_option
           if option.uniq.length == option.length
             options << option
@@ -24,72 +26,48 @@ def solver(clues, sums)
   options_list = []
     sums.each do |sum|
       sum_options = find_sum_options(sum, 4)
-      puts("Found #{sum_options.length} options")
+      # puts("Found #{sum_options.length} options")
       options_list << sum_options
   end
-  puts("Combining options")
   solution_options = options_list[0].product(options_list[1], options_list[2], options_list[3])
-  puts("Checking validity")
-  solutions = solutions_options.filter(option => valid_solution?(option, clues))
+  solutions = solution_options.filter{|option| valid_solution?(option, clues)}
+  checked_solutions = solutions.map{|option| deduce_answer(option)}.filter{|option| check_clues(option, clues)}
 end
-
-# find_sum_options(17,2).each do |option|
-#   puts(option)
-#   puts('\n')
-#   puts('\n')
-# end
 
 def valid_solution?(solution, clues)
   return false unless solution.flatten.to_set == (1..9).to_set
-  clues.each_with_index do |clue, index|
-    return false unless clue==0 || flattened_solution(solution)[index] == clue
-  end
-  return false unless solution[0,1]==solution[1,0]
-  return false unless solution[0,2]==solution[2,0]
-  return false unless solution[0,3]==solution[3,0]
-  return false unless solution[1,2]==solution[2,1]
-  return false unless solution[1,3]==solution[3,1]
-  return false unless solution[2,3]==solution[3,2]
+  return false unless (solution[0]&solution[1]&solution[2]&solution[3]).length==1
+  return false unless (solution[0]&solution[1]).length==2
+  return false unless (solution[0]&solution[2]).length==2
+  return false unless (solution[1]&solution[3]).length==2
+  return false unless (solution[2]&solution[3]).length==2
+  return false unless ((solution[0]&solution[1])+(solution[0]&solution[2])+(solution[1]&solution[3])+(solution[2]&solution[3])).uniq.length==5
   true
 end
 
-def flattened_solution(solution)
+def check_clues(solution, clues)
+  solution.each_with_index do |number, index|
+    if clues[index] > 0 && number != clues[index]
+      return false
+    end
+  end
+  true
+end
+
+def deduce_answer(solution)
   [
-    solution[0,0],
-    solution[0,1],
-    solution[1,1],
-    solution[0,2],
-    solution[0,3],
-    solution[1,3],
-    solution[2,2],
-    solution[2,3],
-    solution[3,3]
+    (solution[0]-solution[1]-solution[2])[0],
+    ((solution[0]&solution[1])-(solution[0]&solution[1]&solution[2]&solution[3]))[0],
+    (solution[1]-solution[0]-solution[3])[0],
+    ((solution[0]&solution[2])-(solution[0]&solution[1]&solution[2]&solution[3]))[0],
+    (solution[0]&solution[1]&solution[2]&solution[3])[0],
+    ((solution[1]&solution[3])-(solution[0]&solution[1]&solution[2]&solution[3]))[0],
+    (solution[2]-solution[0]-solution[3])[0],
+    ((solution[2]&solution[3])-(solution[0]&solution[1]&solution[2]&solution[3]))[0],
+    (solution[3]-solution[1]-solution[2])[0]
   ]
 end
-#
-# find_sum_options(10,4).each do |option|
-#   puts('\n\n')
-#   puts(option)
-# end
-# puts("\n\n\n\n")
-#
-# find_sum_options(21,4).each do |option|
-#   puts('\n\n')
-#   puts(option)
-# end
-# puts("\n\n\n\n")
-#
-# find_sum_options(18,4).each do |option|
-#   puts('\n\n')
-#   puts(option)
-# end
-# puts("\n\n\n\n")
-#
-# find_sum_options(20,4).each do |option|
-#   puts('\n\n')
-#   puts(option)
-# end
-# puts("\n\n\n\n")
 
-
-solver([0,0,0,0,0,0,8,0,7], [10,21,18,20])
+solver([6,0,9,0,0,0,5,0,0], [17,15,18,15]).each do |solution|
+  puts(solution.inspect)
+end
