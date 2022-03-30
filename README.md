@@ -1,1 +1,3 @@
 # sujiko-solver
+
+Combination of interesting puzzle and ruby exercise to solve the puzzle [sujiko](https://en.wikipedia.org/wiki/Sujiko) programmatically. Given the number of potential solutions, the performance leaves something to be desired... 
